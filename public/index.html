@@ -154,34 +154,34 @@
       <svg width="100%" height="400" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
         <!-- SVG 水桶 -->
         <g id="bucket">
-          <rect x="150" y="150" width="100" height="100" fill="#E8E8E8" stroke="#333" stroke-width="2" rx="2" />
-          <path d="M150,150 Q200,140 250,150" fill="none" stroke="#333" stroke-width="2" />
-          <path d="M145,160 Q135,180 145,200" fill="none" stroke="#333" stroke-width="2" />
-          <path d="M255,160 Q265,180 255,200" fill="none" stroke="#333" stroke-width="2" />
-          <line x1="150" y1="170" x2="250" y2="170" stroke="#CCC" stroke-width="1" />
-          <line x1="150" y1="190" x2="250" y2="190" stroke="#CCC" stroke-width="1" />
-          <line x1="150" y1="210" x2="250" y2="210" stroke="#CCC" stroke-width="1" />
-          <line x1="150" y1="230" x2="250" y2="230" stroke="#CCC" stroke-width="1" />
+          <rect x="125" y="150" width="150" height="100" fill="#E8E8E8" stroke="#333" stroke-width="2" rx="2" />
+          <path d="M125,150 Q200,140 275,150" fill="none" stroke="#333" stroke-width="2" />
+          <path d="M120,160 Q110,180 120,200" fill="none" stroke="#333" stroke-width="2" />
+          <path d="M280,160 Q290,180 280,200" fill="none" stroke="#333" stroke-width="2" />
+          <line x1="125" y1="170" x2="275" y2="170" stroke="#CCC" stroke-width="1" />
+          <line x1="125" y1="190" x2="275" y2="190" stroke="#CCC" stroke-width="1" />
+          <line x1="125" y1="210" x2="275" y2="210" stroke="#CCC" stroke-width="1" />
+          <line x1="125" y1="230" x2="275" y2="230" stroke="#CCC" stroke-width="1" />
           <text id="bucket-text" x="200" y="200" font-size="16" font-family="Arial" text-anchor="middle" fill="black" font-weight="bold">知识付费墙</text>
         </g>
 
         <!-- 初始水位 -->
-        <rect id="water" x="150" y="240" width="100" height="10" fill="#A3DFFA" opacity="0.8">
+        <rect id="water" x="125" y="240" width="150" height="10" fill="#A3DFFA" opacity="0.8">
           <animate id="waterRise" attributeName="y" dur="0.5s" fill="freeze" begin="indefinite" />
           <animate id="waterHeight" attributeName="height" dur="0.5s" fill="freeze" begin="indefinite" />
         </rect>
 
         <!-- 水面波纹效果 - 持续波动 -->
-        <path id="waterWave" d="M150,240 Q175,238 200,240 Q225,242 250,240" stroke="#7AC5E4" fill="none" opacity="0.7" stroke-width="1.5">
+        <path id="waterWave" d="M125,240 Q162.5,238 200,240 Q237.5,242 275,240" stroke="#7AC5E4" fill="none" opacity="0.7" stroke-width="1.5">
           <animate
             id="waveAnim"
             attributeName="d"
             values="
-            M150,240 Q175,238 200,240 Q225,242 250,240;
-            M150,240 Q175,235 200,240 Q225,245 250,240;
-            M150,240 Q175,238 200,240 Q225,242 250,240;
-            M150,240 Q175,242 200,240 Q225,238 250,240;
-            M150,240 Q175,238 200,240 Q225,242 250,240"
+            M125,240 Q162.5,238 200,240 Q237.5,242 275,240;
+            M125,240 Q162.5,235 200,240 Q237.5,245 275,240;
+            M125,240 Q162.5,238 200,240 Q237.5,242 275,240;
+            M125,240 Q162.5,242 200,240 Q237.5,238 275,240;
+            M125,240 Q162.5,238 200,240 Q237.5,242 275,240"
             dur="3s"
             repeatCount="indefinite"
           />
@@ -258,9 +258,9 @@
       engine.world.scale = 0.8;
 
       // 初始化物理世界
-      const ground = Bodies.rectangle(200, 252, 100, 5, { isStatic: true });
-      const leftWall = Bodies.rectangle(150, 200, 3, 100, { isStatic: true });
-      const rightWall = Bodies.rectangle(250, 200, 3, 100, { isStatic: true });
+      const ground = Bodies.rectangle(200, 252, 150, 5, { isStatic: true });
+      const leftWall = Bodies.rectangle(125, 200, 3, 100, { isStatic: true });
+      const rightWall = Bodies.rectangle(275, 200, 3, 100, { isStatic: true });
       World.add(world, [ground, leftWall, rightWall]);
 
       // 初始化变量
@@ -525,7 +525,7 @@
           water.setAttribute("y", waterLevel);
           water.setAttribute("height", waterHeight);
           // 重置波纹动画到初始状态
-          document.getElementById("waterWave").setAttribute("d", "M150,240 Q175,238 200,240 Q225,242 250,240");
+          document.getElementById("waterWave").setAttribute("d", "M125,240 Q162.5,238 200,240 Q237.5,242 275,240");
         }
       });
 
@@ -537,7 +537,7 @@
           water.setAttribute("y", waterLevel);
           water.setAttribute("height", waterHeight);
           // 重置波纹动画到初始状态
-          document.getElementById("waterWave").setAttribute("d", "M150,240 Q175,238 200,240 Q225,242 250,240");
+          document.getElementById("waterWave").setAttribute("d", "M125,240 Q162.5,238 200,240 Q237.5,242 275,240");
         }
       });
 
@@ -552,9 +552,9 @@
 
         isAnimationInProgress = true;
         const dropBtn = document.getElementById("dropStone");
-        const resetBtn = document.getElementById("reset");
+        // const resetBtn = document.getElementById("reset");
         dropBtn.disabled = true;
-        resetBtn.disabled = true;
+        // resetBtn.disabled = true;
 
         // 随机化石子的初始位置，使其在水桶上方的不同位置落下
         const randomX = 170 + Math.random() * 60; // 在170-230范围内随机
@@ -668,7 +668,7 @@
                       birdStone.setAttribute("opacity", "1");
                       isAnimationInProgress = false;
                       dropBtn.disabled = false;
-                      resetBtn.disabled = false;
+                      // resetBtn.disabled = false;
                     },
                     { once: true }
                   );
@@ -713,7 +713,7 @@
                       const newY = bodyA.position.y + (overlap / 4) * Math.sin(angle);
 
                       // 边界检查，确保石子不会被挤出容器
-                      if (newX >= 155 && newX <= 245 && newY >= 155 && newY <= 245) {
+                      if (newX >= 130 && newX <= 270 && newY >= 155 && newY <= 245) {
                         Matter.Body.setPosition(bodyA, {
                           x: newX,
                           y: newY,
@@ -745,37 +745,37 @@
       requestAnimationFrame(run);
 
       // 重置功能
-      document.getElementById("reset").addEventListener("click", () => {
-        // 清理物理世界中的所有物体
-        world.bodies.forEach((body) => {
-          if (body.id) {
-            // 只移除石子，保留边界
-            World.remove(world, body);
-          }
-        });
+      // document.getElementById("reset").addEventListener("click", () => {
+      //   // 清理物理世界中的所有物体
+      //   world.bodies.forEach((body) => {
+      //     if (body.id) {
+      //       // 只移除石子，保留边界
+      //       World.remove(world, body);
+      //     }
+      //   });
 
-        // 清理SVG元素
-        while (stonesGroup.firstChild) {
-          stonesGroup.removeChild(stonesGroup.firstChild);
-        }
+      //   // 清理SVG元素
+      //   while (stonesGroup.firstChild) {
+      //     stonesGroup.removeChild(stonesGroup.firstChild);
+      //   }
 
-        // 重新添加边界
-        World.add(world, [ground, leftWall, rightWall]);
+      //   // 重新添加边界
+      //   World.add(world, [ground, leftWall, rightWall]);
 
-        // 重置其他状态
-        stones = [];
-        waterLevel = 240;
-        waterHeight = 10;
-        water.setAttribute("y", waterLevel);
-        water.setAttribute("height", waterHeight);
-        crow.setAttribute("transform", "");
-        birdStone.setAttribute("opacity", "1");
-        stoneCount = 0;
-        isAnimationInProgress = false;
+      //   // 重置其他状态
+      //   stones = [];
+      //   waterLevel = 240;
+      //   waterHeight = 10;
+      //   water.setAttribute("y", waterLevel);
+      //   water.setAttribute("height", waterHeight);
+      //   crow.setAttribute("transform", "");
+      //   birdStone.setAttribute("opacity", "1");
+      //   stoneCount = 0;
+      //   isAnimationInProgress = false;
 
-        // 通知服务器重置
-        socket.emit("reset");
-      });
+      //   // 通知服务器重置
+      //   socket.emit("reset");
+      // });
 
       // 页面加载时初始化语言
       document.addEventListener("DOMContentLoaded", () => {
