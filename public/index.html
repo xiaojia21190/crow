@@ -487,12 +487,6 @@
 
       // 初始化和水位同步逻辑
       socket.on("init", (data) => {
-        // 重置现有远程石子
-        remoteStoneSVGElements.forEach((svg, id) => {
-          stonesGroup.removeChild(svg);
-          remoteStoneSVGElements.delete(id);
-        });
-
         // 初始化远程石子
         data.stones.forEach((stone) => {
           if (!document.querySelector(`circle[data-id="${stone.id}"]`)) {
@@ -516,16 +510,27 @@
             svgStone.physicsBody = physicsStone;
           }
         });
-        stoneCount = data.stones.length;
 
-        // 同步初始水位并重置波纹
         if (data.waterLevel !== undefined && data.waterHeight !== undefined) {
           waterLevel = data.waterLevel;
           waterHeight = data.waterHeight;
           water.setAttribute("y", waterLevel);
           water.setAttribute("height", waterHeight);
-          // 重置波纹动画到初始状态
-          document.getElementById("waterWave").setAttribute("d", "M125,240 Q162.5,238 200,240 Q237.5,242 275,240");
+
+          // 更新水波纹位置以匹配当前水位
+          const waveY = waterLevel;
+          document.getElementById("waterWave").setAttribute("d", `M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY}`);
+
+          // 同时更新波纹动画的值
+          const waveAnim = document.getElementById("waveAnim");
+          waveAnim.setAttribute(
+            "values",
+            `M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY - 5} 200,${waveY} Q237.5,${waveY + 5} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY + 2} 200,${waveY} Q237.5,${waveY - 2} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY}`
+          );
         }
       });
 
@@ -536,8 +541,21 @@
           waterHeight = data.height;
           water.setAttribute("y", waterLevel);
           water.setAttribute("height", waterHeight);
-          // 重置波纹动画到初始状态
-          document.getElementById("waterWave").setAttribute("d", "M125,240 Q162.5,238 200,240 Q237.5,242 275,240");
+
+          // 更新水波纹位置以匹配当前水位
+          const waveY = waterLevel;
+          document.getElementById("waterWave").setAttribute("d", `M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY}`);
+
+          // 同时更新波纹动画的值
+          const waveAnim = document.getElementById("waveAnim");
+          waveAnim.setAttribute(
+            "values",
+            `M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY - 5} 200,${waveY} Q237.5,${waveY + 5} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY + 2} 200,${waveY} Q237.5,${waveY - 2} 275,${waveY};
+             M125,${waveY} Q162.5,${waveY - 2} 200,${waveY} Q237.5,${waveY + 2} 275,${waveY}`
+          );
         }
       });
 
