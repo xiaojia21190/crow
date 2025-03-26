@@ -219,6 +219,9 @@
         }
       });
 
+      // 页面加载时请求初始状态
+      socket.emit("requestInit");
+
       // 初始化和水位同步逻辑
       socket.on("init", (data) => {
         // 重置现有远程石子
@@ -317,6 +320,8 @@
             svgStone.setAttribute("r", 3);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
+            // 将SVG元素与物理体关联
+            svgStone.physicsBody = stone;
             stone.svgElement = svgStone;
             stoneCount++;
 

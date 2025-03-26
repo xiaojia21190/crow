@@ -89,6 +89,15 @@ io.on("connection", (socket) => {
     waterHeight: state.waterHeight,
   });
 
+  // 处理初始化请求
+  socket.on("requestInit", () => {
+    socket.emit("init", {
+      stones: Array.from(state.stones.values()),
+      waterLevel: state.waterLevel,
+      waterHeight: state.waterHeight,
+    });
+  });
+
   // 处理石子添加
   socket.on("addStone", (data) => {
     const stone = {
