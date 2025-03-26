@@ -155,15 +155,18 @@
 
       const engine = Engine.create({
         enableSleeping: true,
+        positionIterations: 8, // 增加位置迭代次数，提高碰撞精度
+        velocityIterations: 8, // 增加速度迭代次数，改善物理模拟
+        constraintIterations: 4, // 增加约束迭代次数
       });
       const world = engine.world; // 明确定义world变量
-      engine.world.gravity.y = 0.5;
+      engine.world.gravity.y = 1.0;
       engine.world.scale = 0.8;
 
       // 初始化物理世界
       const ground = Bodies.rectangle(200, 252, 100, 5, { isStatic: true });
-      const leftWall = Bodies.rectangle(150, 200, 10, 100, { isStatic: true });
-      const rightWall = Bodies.rectangle(250, 200, 10, 100, { isStatic: true });
+      const leftWall = Bodies.rectangle(150, 200, 3, 100, { isStatic: true });
+      const rightWall = Bodies.rectangle(250, 200, 3, 100, { isStatic: true });
       World.add(world, [ground, leftWall, rightWall]);
 
       // 初始化变量
@@ -198,6 +201,18 @@
           svgStone.setAttribute("fill", "gray");
           stonesGroup.appendChild(svgStone);
           remoteStoneSVGElements.set(data.id, svgStone);
+
+          // 为远程石子创建物理体并添加到物理世界
+          const physicsStone = Bodies.circle(data.x, data.y, 5, {
+            restitution: 0.5,
+            friction: 0.5,
+            density: 0.01,
+          });
+          physicsStone.id = data.id;
+          World.add(world, physicsStone);
+          physicsStone.svgElement = svgStone;
+          svgStone.physicsBody = physicsStone;
+
           stoneCount++;
         }
       });
@@ -207,12 +222,25 @@
         if (svgStone) {
           svgStone.setAttribute("cx", data.x);
           svgStone.setAttribute("cy", data.y);
+
+          // 如果存在对应的物理体，也更新其位置
+          if (svgStone.physicsBody) {
+            Matter.Body.setPosition(svgStone.physicsBody, {
+              x: data.x,
+              y: data.y,
+            });
+          }
         }
       });
 
       socket.on("stoneRemoved", (id) => {
         const svgStone = document.querySelector(`circle[data-id="${id}"]`);
         if (svgStone) {
+          // 如果存在对应的物理体，从物理世界中移除
+          if (svgStone.physicsBody) {
+            World.remove(world, svgStone.physicsBody);
+          }
+
           stonesGroup.removeChild(svgStone);
           remoteStoneSVGElements.delete(id);
           stoneCount--;
@@ -243,13 +271,13 @@
             remoteStoneSVGElements.set(stone.id, svgStone);
             // 为远程石子创建物理体并添加到物理世界
             const physicsStone = Bodies.circle(stone.x, stone.y, 5, {
-              restitution: 0.3,
+              restitution: 0.5,
               friction: 0.5,
               density: 0.01,
-              isStatic: false,
             });
             physicsStone.id = stone.id;
             World.add(world, physicsStone);
+            physicsStone.svgElement = svgStone;
             svgStone.physicsBody = physicsStone;
           }
         });
@@ -293,6 +321,33 @@
         dropBtn.disabled = true;
         resetBtn.disabled = true;
 
+        // 随机化石子的初始位置，使其在水桶上方的不同位置落下
+        const randomX = 170 + Math.random() * 60; // 在170-230范围内随机
+
+        // 根据随机位置调整乌鸦的飞行路径
+        // 计算乌鸦需要飞行的目标X坐标（比石子位置稍微靠左一点）
+        const crowTargetX = randomX - 100; // 调整乌鸦位置，使嘴部对准石子落点
+
+        // 动态设置乌鸦的飞行路径
+        crowMove.setAttribute(
+          "values",
+          `0,0;
+          ${crowTargetX / 3},10;
+          ${(crowTargetX * 2) / 3},20;
+          ${crowTargetX * 0.9},30;
+          ${crowTargetX},40`
+        );
+
+        // 同样调整乌鸦返回的路径
+        crowReturn.setAttribute(
+          "values",
+          `${crowTargetX},40;
+          ${crowTargetX * 0.75},30;
+          ${crowTargetX * 0.5},20;
+          ${crowTargetX * 0.25},10;
+          0,0`
+        );
+
         // 触发眨眼动画
         eyeBlink.beginElement();
 
@@ -306,10 +361,16 @@
             birdStone.setAttribute("opacity", "0");
             eyeBlink.beginElement();
 
-            // 创建本地石子
+            // 创建本地石子 - 从乌鸦嘴部位置生成
             const stoneId = Date.now().toString();
-            const stone = Bodies.circle(180, 100, 5, {
-              restitution: 0.3,
+
+            // 计算石子的生成位置 - 乌鸦嘴部位置
+            // 乌鸦嘴部位置大约在乌鸦身体前端右侧，需要根据乌鸦的位置计算
+            const stoneStartX = randomX; // 石子落点与最初设定的随机位置一致
+            const stoneStartY = 100; // 保持原有的Y坐标
+
+            const stone = Bodies.circle(stoneStartX, stoneStartY, 5, {
+              restitution: 0.5,
               friction: 0.5,
               density: 0.01,
             });
@@ -318,8 +379,8 @@
 
             const svgStone = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             svgStone.setAttribute("data-id", stoneId);
-            svgStone.setAttribute("cx", 180);
-            svgStone.setAttribute("cy", 100);
+            svgStone.setAttribute("cx", stoneStartX);
+            svgStone.setAttribute("cy", stoneStartY);
             svgStone.setAttribute("r", 5);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
@@ -330,8 +391,8 @@
             // 通知服务器添加石子
             socket.emit("addStone", {
               id: stoneId,
-              x: 180,
-              y: 100,
+              x: stoneStartX,
+              y: stoneStartY,
             });
 
             // 检查石子是否停止
@@ -377,7 +438,7 @@
                     },
                     { once: true }
                   );
-                }, 1500);
+                }, 1000);
               }
             }, 100);
           },
@@ -392,18 +453,53 @@
 
       function run(currentTime) {
         if (currentTime - lastTime > interval) {
+          // 使用固定的时间步长，提高物理模拟稳定性
           Engine.update(engine, interval);
-          world.bodies.forEach((body) => {
-            if (body.svgElement) {
-              body.svgElement.setAttribute("cx", body.position.x);
-              body.svgElement.setAttribute("cy", body.position.y);
+
+          // 检测并修正重叠的石头
+          world.bodies.forEach((bodyA) => {
+            // 确保这是一个石子（有id属性）
+            if (bodyA.id && bodyA.svgElement) {
+              world.bodies.forEach((bodyB) => {
+                if (bodyA !== bodyB && bodyB.id && bodyB.svgElement) {
+                  const dx = bodyA.position.x - bodyB.position.x;
+                  const dy = bodyA.position.y - bodyB.position.y;
+                  const distance = Math.sqrt(dx * dx + dy * dy);
+                  // 如果两个石头距离小于它们半径之和（有重叠）
+                  if (distance < 10) {
+                    // 两个石头半径之和为10
+                    // 轻微调整位置，减少重叠
+                    const overlap = 10 - distance;
+                    if (overlap > 0.5) {
+                      // 只处理明显的重叠
+                      const angle = Math.atan2(dy, dx);
+
+                      // 计算新位置
+                      const newX = bodyA.position.x + (overlap / 4) * Math.cos(angle);
+                      const newY = bodyA.position.y + (overlap / 4) * Math.sin(angle);
+
+                      // 边界检查，确保石子不会被挤出容器
+                      if (newX >= 155 && newX <= 245 && newY >= 155 && newY <= 245) {
+                        Matter.Body.setPosition(bodyA, {
+                          x: newX,
+                          y: newY,
+                        });
+                      }
+                    }
+                  }
+                }
+              });
+
+              // 更新SVG元素位置
+              bodyA.svgElement.setAttribute("cx", bodyA.position.x);
+              bodyA.svgElement.setAttribute("cy", bodyA.position.y);
 
               // 同步本地石子位置到服务器
-              if (body.id && !isAnimationInProgress) {
+              if (!isAnimationInProgress) {
                 socket.emit("updateStone", {
-                  id: body.id,
-                  x: body.position.x,
-                  y: body.position.y,
+                  id: bodyA.id,
+                  x: bodyA.position.x,
+                  y: bodyA.position.y,
                 });
               }
             }
@@ -416,10 +512,23 @@
 
       // 重置功能
       document.getElementById("reset").addEventListener("click", () => {
-        Composite.clear(world, false);
+        // 清理物理世界中的所有物体
+        world.bodies.forEach((body) => {
+          if (body.id) {
+            // 只移除石子，保留边界
+            World.remove(world, body);
+          }
+        });
+
+        // 清理SVG元素
         while (stonesGroup.firstChild) {
           stonesGroup.removeChild(stonesGroup.firstChild);
         }
+
+        // 重新添加边界
+        World.add(world, [ground, leftWall, rightWall]);
+
+        // 重置其他状态
         stones = [];
         waterLevel = 240;
         waterHeight = 10;
@@ -429,6 +538,9 @@
         birdStone.setAttribute("opacity", "1");
         stoneCount = 0;
         isAnimationInProgress = false;
+
+        // 通知服务器重置
+        socket.emit("reset");
       });
     </script>
   </body>
