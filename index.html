@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="乌鸦喝水动画演示 - 通过添加石子使水位上升" />
+    <title>乌鸦喝水 - 打破知识付费墙</title>
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.14.2/build/matter.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: "Arial", "Microsoft YaHei", sans-serif;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+      button {
+        margin: 10px;
+        padding: 8px 16px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      .container {
+        max-width: 800px;
+        width: 100%;
+        text-align: center;
+      }
+      .instructions {
+        margin: 20px 0;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>乌鸦喝水</h1>
+      <p class="instructions">点击"添加石子"按钮，观察水位变化</p>
+      <div>
+        <button id="dropStone">添加石子</button>
+        <button id="reset">重置</button>
+      </div>
+      <svg width="100%" height="400" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+        <!-- SVG 水桶 - 改进版 -->
+        <g id="bucket">
+          <!-- 桶身 -->
+          <rect x="150" y="150" width="100" height="100" fill="#E8E8E8" stroke="#333" stroke-width="2" rx="2" />
+          <!-- 桶边缘 -->
+          <path d="M150,150 Q200,140 250,150" fill="none" stroke="#333" stroke-width="2" />
+          <!-- 桶把手 -->
+          <path d="M145,160 Q135,180 145,200" fill="none" stroke="#333" stroke-width="2" />
+          <path d="M255,160 Q265,180 255,200" fill="none" stroke="#333" stroke-width="2" />
+          <!-- 桶纹理 -->
+          <line x1="150" y1="170" x2="250" y2="170" stroke="#CCC" stroke-width="1" />
+          <line x1="150" y1="190" x2="250" y2="190" stroke="#CCC" stroke-width="1" />
+          <line x1="150" y1="210" x2="250" y2="210" stroke="#CCC" stroke-width="1" />
+          <line x1="150" y1="230" x2="250" y2="230" stroke="#CCC" stroke-width="1" />
+          <!-- 水桶上的文字 -->
+          <text x="200" y="200" font-size="16" font-family="Arial" text-anchor="middle" fill="black" font-weight="bold">知识付费墙</text>
+        </g>
+
+        <!-- 初始水位 -->
+        <rect id="water" x="150" y="240" width="100" height="10" fill="#A3DFFA" opacity="0.8">
+          <animate id="waterRise" attributeName="y" dur="0.5s" fill="freeze" begin="indefinite" />
+          <animate id="waterHeight" attributeName="height" dur="0.5s" fill="freeze" begin="indefinite" />
+        </rect>
+
+        <!-- 水面波纹效果 - 增强版 -->
+        <g id="waterWaves">
+          <!-- 主波纹 -->
+          <path id="waterWave1" d="M150,240 Q175,238 200,240 Q225,242 250,240" stroke="#7AC5E4" fill="none" opacity="0.5" stroke-width="1.8">
+            <animate attributeName="opacity" values="0.5;0.8;0.5" dur="2s" repeatCount="indefinite" />
+            <animate
+              attributeName="d"
+              values="M150,240 Q175,238 200,240 Q225,242 250,240;
+                   M150,240 Q175,242 200,240 Q225,238 250,240;
+                   M150,240 Q175,238 200,240 Q225,242 250,240"
+              dur="2s"
+              repeatCount="indefinite"
+            />
+          </path>
+
+          <!-- 次级波纹 -->
+          <path id="waterWave2" d="M150,240 Q175,238 200,240 Q225,242 250,240" stroke="#9DD9F2" fill="none" opacity="0.3" stroke-width="1.2">
+            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2.5s" repeatCount="indefinite" begin="0.5s" />
+            <animate
+              attributeName="d"
+              values="M150,240 Q175,237 200,240 Q225,243 250,240;
+                   M150,240 Q175,243 200,240 Q225,237 250,240;
+                   M150,240 Q175,237 200,240 Q225,243 250,240"
+              dur="2.5s"
+              repeatCount="indefinite"
+              begin="0.5s"
+            />
+          </path>
+
+          <!-- 小波纹 -->
+          <path id="waterWave3" d="M150,240 Q175,239 200,240 Q225,241 250,240" stroke="#C1E7F9" fill="none" opacity="0.2" stroke-width="0.8">
+            <animate attributeName="opacity" values="0.2;0.4;0.2" dur="3s" repeatCount="indefinite" begin="1s" />
+            <animate
+              attributeName="d"
+              values="M150,240 Q175,239 200,240 Q225,241 250,240;
+                   M150,240 Q175,241 200,240 Q225,239 250,240;
+                   M150,240 Q175,239 200,240 Q225,241 250,240"
+              dur="3s"
+              repeatCount="indefinite"
+              begin="1s"
+            />
+          </path>
+        </g>
+
+        <!-- 石子组 -->
+        <g id="stones"></g>
+
+        <!-- 乌鸦 -->
+        <g id="crow">
+          <!-- 身体 -->
+          <ellipse cx="50" cy="50" rx="25" ry="12" fill="#1C2526" />
+
+          <!-- 头部 -->
+          <circle cx="75" cy="45" r="8" fill="#1C2526">
+            <animateTransform attributeName="transform" type="rotate" values="0 75 45; 5 75 45; -5 75 45; 0 75 45" dur="2s" repeatCount="indefinite" />
+          </circle>
+
+          <!-- 喙 -->
+          <polygon points="83,45 90,50 83,55" fill="#F5C518">
+            <animateTransform attributeName="transform" type="rotate" values="0 83 50; 5 83 50; -5 83 50; 0 83 50" dur="1.5s" repeatCount="indefinite" />
+          </polygon>
+
+          <!-- 乌鸦嘴边的石子 -->
+          <circle id="birdStone" cx="88" cy="50" r="5" fill="gray" />
+
+          <!-- 翅膀 - 左 (增强版) -->
+          <path d="M45,50 Q30,60 35,70 Q45,75 55,50" fill="#1C2526">
+            <animateTransform attributeName="transform" type="rotate" values="0 50 50; -20 50 50; 0 50 50; 10 50 50; 0 50 50" dur="0.6s" repeatCount="indefinite" keyTimes="0;0.3;0.5;0.8;1" />
+          </path>
+
+          <!-- 翅膀 - 右 (增强版) -->
+          <path d="M45,50 Q30,45 35,40 Q45,35 55,50" fill="#1C2526">
+            <animateTransform attributeName="transform" type="rotate" values="0 50 50; 10 50 50; 0 50 50; -20 50 50; 0 50 50" dur="0.6s" repeatCount="indefinite" keyTimes="0;0.3;0.5;0.8;1" />
+          </path>
+
+          <!-- 尾巴 -->
+          <path d="M25,50 Q35,65 45,50" fill="#1C2526">
+            <animateTransform attributeName="transform" type="rotate" values="0 25 50; 5 25 50; -5 25 50; 0 25 50" dur="2s" repeatCount="indefinite" />
+          </path>
+
+          <!-- 眼睛 -->
+          <circle cx="77" cy="43" r="2" fill="white">
+            <animate id="eyeBlink" attributeName="r" values="2;0.5;2" dur="0.3s" begin="indefinite" repeatCount="1" />
+          </circle>
+          <circle cx="77" cy="43" r="0.8" fill="black" />
+
+          <!-- 脚 -->
+          <g id="legs">
+            <!-- 左腿 -->
+            <line x1="45" y1="60" x2="45" y2="75" stroke="#1C2526" stroke-width="1.5">
+              <animateTransform attributeName="transform" type="rotate" values="0 45 60; 5 45 60; -5 45 60; 0 45 60" dur="1s" repeatCount="indefinite" />
+            </line>
+            <!-- 左脚爪 -->
+            <line x1="45" y1="75" x2="42" y2="80" stroke="#1C2526" stroke-width="1" />
+            <line x1="45" y1="75" x2="45" y2="80" stroke="#1C2526" stroke-width="1" />
+            <line x1="45" y1="75" x2="48" y2="80" stroke="#1C2526" stroke-width="1" />
+
+            <!-- 右腿 -->
+            <line x1="55" y1="60" x2="55" y2="75" stroke="#1C2526" stroke-width="1.5">
+              <animateTransform attributeName="transform" type="rotate" values="0 55 60; -5 55 60; 5 55 60; 0 55 60" dur="1.2s" repeatCount="indefinite" />
+            </line>
+            <!-- 右脚爪 -->
+            <line x1="55" y1="75" x2="52" y2="80" stroke="#1C2526" stroke-width="1" />
+            <line x1="55" y1="75" x2="55" y2="80" stroke="#1C2526" stroke-width="1" />
+            <line x1="55" y1="75" x2="58" y2="80" stroke="#1C2526" stroke-width="1" />
+          </g>
+
+          <!-- 动画 -->
+          <animateTransform id="crowMove" attributeName="transform" type="translate" values="0,0; 30,10; 60,20; 90,30; 100,40" keyTimes="0;0.3;0.6;0.9;1" dur="1.2s" begin="indefinite" fill="freeze" />
+          <animateTransform id="crowDrink" attributeName="transform" type="rotate" values="0 75 45; -10 75 45; -20 75 45; -15 75 45; -20 75 45" keyTimes="0;0.3;0.6;0.8;1" dur="0.8s" begin="indefinite" fill="freeze" />
+          <animateTransform id="crowReturn" attributeName="transform" type="translate" values="100,40; 70,30; 40,20; 10,10; 0,0" keyTimes="0;0.3;0.6;0.9;1" dur="1.2s" begin="indefinite" fill="freeze" />
+        </g>
+      </svg>
+      <audio id="stoneSplash" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
+      <audio id="crowCaw" src="https://www.soundjay.com/nature/crow-01.mp3"></audio>
+    </div>
+    <script>
+      // 初始化物理引擎
+      const Engine = Matter.Engine,
+        World = Matter.World,
+        Bodies = Matter.Bodies,
+        Composite = Matter.Composite;
+
+      const engine = Engine.create({
+        enableSleeping: true, // 启用休眠以优化性能
+      });
+      const world = engine.world;
+      engine.world.gravity.y = 0.5;
+
+      // 优化物理引擎更新频率
+      engine.timing.timeScale = 0.8;
+
+      const ground = Bodies.rectangle(200, 252, 100, 5, { isStatic: true });
+      const leftWall = Bodies.rectangle(150, 200, 10, 100, { isStatic: true });
+      const rightWall = Bodies.rectangle(250, 200, 10, 100, { isStatic: true });
+      World.add(world, [ground, leftWall, rightWall]);
+
+      const stonesGroup = document.getElementById("stones");
+      const crow = document.getElementById("crow");
+      const water = document.getElementById("water");
+      const waterRise = document.getElementById("waterRise");
+      const waterHeightAnim = document.getElementById("waterHeight");
+      const crowMove = document.getElementById("crowMove");
+      const crowDrink = document.getElementById("crowDrink");
+      const crowReturn = document.getElementById("crowReturn");
+      const stoneSplash = document.getElementById("stoneSplash");
+      const crowCaw = document.getElementById("crowCaw");
+      const birdStone = document.getElementById("birdStone");
+      const eyeBlink = document.getElementById("eyeBlink");
+
+      let waterLevel = 240;
+      let waterHeight = 10;
+      let waterRiseTriggered = false;
+      let stoneCount = 0;
+      const maxStones = 50;
+      let isAnimationInProgress = false;
+      let stones = []; // 跟踪所有石子
+
+      document.getElementById("dropStone").addEventListener("click", () => {
+        const dropBtn = document.getElementById("dropStone");
+        const resetBtn = document.getElementById("reset");
+
+        if (stoneCount >= maxStones) {
+          // 使用更友好的提示方式
+          const message = document.createElement("div");
+          message.textContent = "水位已足够，乌鸦可以喝水了！";
+          message.style.position = "fixed";
+          message.style.top = "20px";
+          message.style.left = "50%";
+          message.style.transform = "translateX(-50%)";
+          message.style.padding = "10px 20px";
+          message.style.background = "#4CAF50";
+          message.style.color = "white";
+          message.style.borderRadius = "4px";
+          message.style.zIndex = "1000";
+          document.body.appendChild(message);
+          setTimeout(() => {
+            document.body.removeChild(message);
+          }, 3000);
+
+          eyeBlink.beginElement();
+          crowDrink.beginElement();
+          crowCaw.play();
+
+          // 禁用按钮防止继续添加
+          dropBtn.disabled = true;
+          return;
+        }
+
+        // 防止重复点击
+        if (isAnimationInProgress) {
+          return;
+        }
+
+        isAnimationInProgress = true;
+        dropBtn.disabled = true;
+        resetBtn.disabled = true;
+
+        // 触发眨眼动画
+        eyeBlink.beginElement();
+
+        // 乌鸦飞向水桶
+        crowMove.beginElement();
+
+        crowMove.addEventListener(
+          "endEvent",
+          () => {
+            console.log("Crow moved to water tank, dropping stone...");
+            // 隐藏乌鸦嘴边的石子
+            birdStone.setAttribute("opacity", "0");
+
+            // 再次眨眼
+            eyeBlink.beginElement();
+
+            const stone = Bodies.circle(180, 100, 5, {
+              restitution: 0.3,
+              friction: 0.5,
+              density: 0.01,
+            });
+            stone.isStopped = false;
+            World.add(world, stone);
+
+            const svgStone = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            svgStone.setAttribute("cx", 180);
+            svgStone.setAttribute("cy", 100);
+            svgStone.setAttribute("r", 5);
+            svgStone.setAttribute("fill", "gray");
+            stonesGroup.appendChild(svgStone);
+
+            stone.svgElement = svgStone;
+            stoneCount++;
+
+            // 检查石子是否停止的间隔
+            let stoneDropped = false;
+            let checkStoneInterval = setInterval(() => {
+              if (stone.speed < 0.14 && !stoneDropped) {
+                console.log("Stone stopped at y:", stone.position.y);
+                stoneDropped = true;
+                clearInterval(checkStoneInterval);
+
+                // 更新水位
+                waterLevel -= 0.5;
+                waterHeight += 0.5;
+                if (waterLevel < 150) waterLevel = 150;
+                if (waterHeight > 100) waterHeight = 100;
+                waterRise.setAttribute("from", water.getAttribute("y"));
+                waterRise.setAttribute("to", waterLevel);
+                waterHeightAnim.setAttribute("from", water.getAttribute("height"));
+                waterHeightAnim.setAttribute("to", waterHeight);
+                waterRise.beginElement();
+                waterHeightAnim.beginElement();
+                water.setAttribute("y", waterLevel);
+                water.setAttribute("height", waterHeight);
+                console.log("Water level updated to:", waterLevel);
+                waterRiseTriggered = true;
+                stoneSplash.play();
+
+                // 乌鸦返回初始位置
+                setTimeout(() => {
+                  eyeBlink.beginElement();
+                  crowReturn.beginElement();
+                  // 先移除可能存在的旧监听器
+                  crowReturn.removeEventListener("endEvent", onCrowReturnEnd);
+
+                  function onCrowReturnEnd() {
+                    // 显示乌鸦嘴边的石子
+                    birdStone.setAttribute("opacity", "1");
+                    isAnimationInProgress = false;
+                    dropBtn.disabled = false;
+                    resetBtn.disabled = false;
+                    // 移除监听器避免重复
+                    crowReturn.removeEventListener("endEvent", onCrowReturnEnd);
+                  }
+
+                  crowReturn.addEventListener("endEvent", onCrowReturnEnd);
+                }, 1500);
+
+                // 性能优化：移除超出屏幕的石子
+                if (stones.length > 20) {
+                  const oldestStone = stones.shift();
+                  if (oldestStone.svgElement) {
+                    stonesGroup.removeChild(oldestStone.svgElement);
+                    World.remove(world, oldestStone);
+                  }
+                }
+              }
+            }, 100);
+          },
+          { once: true }
+        );
+      });
+
+      document.getElementById("reset").addEventListener("click", () => {
+        console.log("Resetting...");
+        // 停止所有进行中的动画
+        crowMove.endElement();
+        crowDrink.endElement();
+        crowReturn.endElement();
+
+        // 更高效的清除方式
+        Composite.clear(world, false);
+        while (stonesGroup.firstChild) {
+          stonesGroup.removeChild(stonesGroup.firstChild);
+        }
+        stones = [];
+        waterLevel = 240;
+        waterHeight = 10;
+        water.setAttribute("y", waterLevel);
+        water.setAttribute("height", waterHeight);
+
+        // 强制重置乌鸦位置和状态
+        crow.setAttribute("transform", "");
+        crow.removeAttribute("style");
+        birdStone.setAttribute("opacity", "1");
+
+        // 重置所有状态变量
+        stoneCount = 0;
+        isAnimationInProgress = false;
+        document.getElementById("dropStone").disabled = false;
+        document.getElementById("reset").disabled = false;
+
+        console.log("Reset complete, crow transform:", crow.getAttribute("transform"));
+      });
+
+      // 使用requestAnimationFrame优化动画循环
+      let lastTime = 0;
+      const fps = 60;
+      const interval = 1000 / fps;
+
+      function run(currentTime) {
+        if (currentTime - lastTime > interval) {
+          Engine.update(engine, interval);
+          world.bodies.forEach((body) => {
+            if (body.svgElement) {
+              body.svgElement.setAttribute("cx", body.position.x);
+              body.svgElement.setAttribute("cy", body.position.y);
+            }
+          });
+          lastTime = currentTime;
+        }
+        requestAnimationFrame(run);
+      }
+      requestAnimationFrame(run);
+    </script>
+  </body>
+</html>
