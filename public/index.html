@@ -3,12 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="乌鸦喝水动画演示 - 通过添加石子使水位上升" />
-    <title>乌鸦喝水 - 打破知识付费墙</title>
+    <meta name="description" content="beyond the paywall" />
+    <title>beyond the paywall</title>
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.14.2/build/matter.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-      /* 保持原有样式不变 */
       body {
         display: flex;
         flex-direction: column;
@@ -47,15 +46,110 @@
         margin: 20px 0;
         color: #666;
       }
+      /* 添加用户列表样式 */
+      .users-panel {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 5px;
+        padding: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        max-width: 200px;
+        z-index: 1000;
+      }
+      .users-panel h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+      }
+      .users-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      .users-list li {
+        padding: 3px 0;
+        font-size: 14px;
+        color: #555;
+        display: flex;
+        align-items: center;
+      }
+      .user-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #4caf50;
+        margin-right: 5px;
+      }
+      .user-join {
+        animation: fadeIn 0.5s;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      /* 语言切换按钮样式 */
+      .language-switch {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 5px;
+        padding: 8px 12px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        transition: background-color 0.3s;
+      }
+      .language-switch:hover {
+        background-color: rgba(240, 240, 240, 0.9);
+      }
+      .language-switch img {
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+      }
     </style>
   </head>
   <body>
+    <!-- 语言切换按钮 -->
+    <div id="language-switch" class="language-switch">
+      <span id="current-language">中文</span>
+      / English
+    </div>
+
+    <!-- 添加用户面板 -->
+    <div class="users-panel">
+      <h3 id="online-users-title">在线用户</h3>
+      <ul id="users-list" class="users-list"></ul>
+    </div>
+
     <div class="container">
-      <h1>乌鸦喝水</h1>
-      <p class="instructions">点击"添加石子"按钮，观察水位变化</p>
+      <h1 id="main-title">打破知识付费墙</h1>
       <div>
         <button id="dropStone">添加石子</button>
-        <button id="reset">重置</button>
       </div>
       <svg width="100%" height="400" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
         <!-- SVG 水桶 -->
@@ -68,7 +162,7 @@
           <line x1="150" y1="190" x2="250" y2="190" stroke="#CCC" stroke-width="1" />
           <line x1="150" y1="210" x2="250" y2="210" stroke="#CCC" stroke-width="1" />
           <line x1="150" y1="230" x2="250" y2="230" stroke="#CCC" stroke-width="1" />
-          <text x="200" y="200" font-size="16" font-family="Arial" text-anchor="middle" fill="black" font-weight="bold">知识付费墙</text>
+          <text id="bucket-text" x="200" y="200" font-size="16" font-family="Arial" text-anchor="middle" fill="black" font-weight="bold">知识付费墙</text>
         </g>
 
         <!-- 初始水位 -->
@@ -189,6 +283,144 @@
       const maxStones = 50;
       let isAnimationInProgress = false;
       let stones = [];
+      let currentUsers = new Map(); // 存储当前用户
+      let currentLanguage = localStorage.getItem("language") || "zh"; // 默认中文
+
+      // 翻译对象
+      const translations = {
+        zh: {
+          mainTitle: "打破付费墙",
+          dropStone: "添加石子",
+          onlineUsers: "在线用户",
+          noUsers: "暂无其他用户",
+          userJoined: "进入了页面",
+          languageSwitch: "中文 / English",
+          bucketText: "知识付费墙",
+        },
+        en: {
+          mainTitle: "beyond the paywall",
+          dropStone: "Add Stone",
+          onlineUsers: "Online Users",
+          noUsers: "No other users",
+          userJoined: "joined the page",
+          languageSwitch: "Chinese / English",
+          bucketText: "Knowledge Paywall",
+        },
+      };
+
+      // 切换语言函数
+      function switchLanguage() {
+        currentLanguage = currentLanguage === "zh" ? "en" : "zh";
+        localStorage.setItem("language", currentLanguage);
+        updatePageLanguage();
+      }
+
+      // 更新页面语言
+      function updatePageLanguage() {
+        const lang = translations[currentLanguage];
+
+        // 更新页面文本
+        document.getElementById("main-title").textContent = lang.mainTitle;
+        document.getElementById("dropStone").textContent = lang.dropStone;
+        document.getElementById("online-users-title").textContent = lang.onlineUsers;
+
+        // 更新水桶上的文字
+        document.getElementById("bucket-text").textContent = lang.bucketText;
+
+        // 更新语言切换按钮
+        document.getElementById("current-language").textContent = currentLanguage === "zh" ? "中文" : "English";
+
+        // 更新用户列表中的无用户文本
+        if (currentUsers.size === 0) {
+          updateUsersList();
+        }
+      }
+
+      // 添加语言切换事件监听
+      document.getElementById("language-switch").addEventListener("click", switchLanguage);
+
+      // 更新用户列表显示
+      function updateUsersList() {
+        const usersList = document.getElementById("users-list");
+        usersList.innerHTML = "";
+
+        currentUsers.forEach((username, userId) => {
+          const li = document.createElement("li");
+          li.className = "user-join";
+
+          const dot = document.createElement("span");
+          dot.className = "user-dot";
+          li.appendChild(dot);
+
+          const text = document.createTextNode(username);
+          li.appendChild(text);
+
+          usersList.appendChild(li);
+        });
+
+        if (currentUsers.size === 0) {
+          const li = document.createElement("li");
+          li.textContent = translations[currentLanguage].noUsers;
+          li.style.fontStyle = "italic";
+          li.style.color = "#999";
+          usersList.appendChild(li);
+        }
+      }
+
+      // 监听用户进入事件
+      socket.on("userJoined", (data) => {
+        if (!currentUsers.has(data.id)) {
+          currentUsers.set(data.id, data.name || `用户${data.id.substring(0, 4)}`);
+          updateUsersList();
+
+          // 显示用户进入提示
+          const notification = document.createElement("div");
+          notification.textContent = `${currentUsers.get(data.id)} ${translations[currentLanguage].userJoined}`;
+          notification.style.position = "fixed";
+          notification.style.bottom = "20px";
+          notification.style.right = "20px";
+          notification.style.backgroundColor = "rgba(76, 175, 80, 0.9)";
+          notification.style.color = "white";
+          notification.style.padding = "10px 15px";
+          notification.style.borderRadius = "4px";
+          notification.style.zIndex = "1000";
+          notification.style.animation = "fadeIn 0.5s, fadeOut 0.5s 3s forwards";
+
+          document.body.appendChild(notification);
+
+          // 3.5秒后移除提示
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 3500);
+        }
+      });
+
+      // 监听用户离开事件
+      socket.on("userLeft", (userId) => {
+        if (currentUsers.has(userId)) {
+          currentUsers.delete(userId);
+          updateUsersList();
+        }
+      });
+
+      // 监听用户列表更新
+      socket.on("usersList", (users) => {
+        currentUsers.clear();
+        users.forEach((user) => {
+          currentUsers.set(user.id, user.name || `用户${user.id.substring(0, 4)}`);
+        });
+        updateUsersList();
+      });
+
+      // 连接时发送用户信息
+      socket.on("connect", () => {
+        // 可以从localStorage获取用户名，或者生成随机名称
+        const username = localStorage.getItem("username") || `访客${Math.floor(Math.random() * 1000)}`;
+        socket.emit("userInfo", { name: username });
+
+        // 存储用户名以便下次使用
+        localStorage.setItem("username", username);
+      });
 
       // 监听服务器事件
       socket.on("stoneAdded", (data) => {
@@ -203,7 +435,7 @@
           remoteStoneSVGElements.set(data.id, svgStone);
 
           // 为远程石子创建物理体并添加到物理世界
-          const physicsStone = Bodies.circle(data.x, data.y, 5, {
+          const physicsStone = Bodies.circle(data.x, data.y, 3, {
             restitution: 0.5,
             friction: 0.5,
             density: 0.01,
@@ -250,6 +482,9 @@
       // 页面加载时请求初始状态
       socket.emit("requestInit");
 
+      // 请求当前用户列表
+      socket.emit("requestUsers");
+
       // 初始化和水位同步逻辑
       socket.on("init", (data) => {
         // 重置现有远程石子
@@ -265,12 +500,12 @@
             svgStone.setAttribute("data-id", stone.id);
             svgStone.setAttribute("cx", stone.x);
             svgStone.setAttribute("cy", stone.y);
-            svgStone.setAttribute("r", 5);
+            svgStone.setAttribute("r", 3);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
             remoteStoneSVGElements.set(stone.id, svgStone);
             // 为远程石子创建物理体并添加到物理世界
-            const physicsStone = Bodies.circle(stone.x, stone.y, 5, {
+            const physicsStone = Bodies.circle(stone.x, stone.y, 3, {
               restitution: 0.5,
               friction: 0.5,
               density: 0.01,
@@ -365,11 +600,10 @@
             const stoneId = Date.now().toString();
 
             // 计算石子的生成位置 - 乌鸦嘴部位置
-            // 乌鸦嘴部位置大约在乌鸦身体前端右侧，需要根据乌鸦的位置计算
-            const stoneStartX = randomX; // 石子落点与最初设定的随机位置一致
-            const stoneStartY = 100; // 保持原有的Y坐标
+            const stoneStartX = randomX;
+            const stoneStartY = 100;
 
-            const stone = Bodies.circle(stoneStartX, stoneStartY, 5, {
+            const stone = Bodies.circle(stoneStartX, stoneStartY, 3, {
               restitution: 0.5,
               friction: 0.5,
               density: 0.01,
@@ -381,7 +615,7 @@
             svgStone.setAttribute("data-id", stoneId);
             svgStone.setAttribute("cx", stoneStartX);
             svgStone.setAttribute("cy", stoneStartY);
-            svgStone.setAttribute("r", 5);
+            svgStone.setAttribute("r", 3);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
 
@@ -466,10 +700,10 @@
                   const dy = bodyA.position.y - bodyB.position.y;
                   const distance = Math.sqrt(dx * dx + dy * dy);
                   // 如果两个石头距离小于它们半径之和（有重叠）
-                  if (distance < 10) {
-                    // 两个石头半径之和为10
+                  if (distance < 6) {
+                    // 两个石头半径之和为6 (3+3)
                     // 轻微调整位置，减少重叠
-                    const overlap = 10 - distance;
+                    const overlap = 6 - distance;
                     if (overlap > 0.5) {
                       // 只处理明显的重叠
                       const angle = Math.atan2(dy, dx);
@@ -541,6 +775,11 @@
 
         // 通知服务器重置
         socket.emit("reset");
+      });
+
+      // 页面加载时初始化语言
+      document.addEventListener("DOMContentLoaded", () => {
+        updatePageLanguage();
       });
     </script>
   </body>

@@ -32,6 +32,9 @@ let state = {
   waterHeight: 10,
 };
 
+// 用户管理
+const connectedUsers = new Map(); // 存储连接的用户信息
+
 // 加载保存的状态
 function loadState() {
   try {
@@ -76,20 +79,49 @@ function saveState() {
   }
 }
 
+// 获取所有在线用户列表
+function getAllUsers() {
+  return Array.from(connectedUsers.entries()).map(([id, userData]) => ({
+    id,
+    name: userData.name || `用户${id.substring(0, 4)}`,
+  }));
+}
+
 // 启动时加载状态
 loadState();
 
 io.on("connection", (socket) => {
   console.log(`New client connected: ${socket.id}`);
 
-  // 发送当前状态
-  // socket.emit("init", {
-  //   stones: Array.from(state.stones.values()),
-  //   waterLevel: state.waterLevel,
-  //   waterHeight: state.waterHeight,
-  // });
+  // 添加用户到连接列表
+  connectedUsers.set(socket.id, {
+    id: socket.id,
+    name: `访客${socket.id.substring(0, 4)}`,
+    joinTime: Date.now(),
+  });
 
-  // 处理初始化请求
+  // 处理用户信息
+  socket.on("userInfo", (data) => {
+    if (data.name) {
+      connectedUsers.set(socket.id, {
+        ...connectedUsers.get(socket.id),
+        name: data.name,
+      });
+
+      // 广播用户加入事件
+      io.emit("userJoined", {
+        id: socket.id,
+        name: data.name,
+      });
+    }
+  });
+
+  // 处理用户列表请求
+  socket.on("requestUsers", () => {
+    socket.emit("usersList", getAllUsers());
+  });
+
+  // 发送当前状态
   socket.on("requestInit", () => {
     loadState();
     socket.emit("init", {
@@ -109,6 +141,7 @@ io.on("connection", (socket) => {
     };
 
     state.stones.set(data.id, stone);
+    socket.broadcast.emit("stoneAdded", stone); // 只广播给其他客户端
     saveState();
   });
 
@@ -120,7 +153,7 @@ io.on("connection", (socket) => {
         x: data.x,
         y: data.y,
       });
-      io.emit("stoneUpdated", data);
+      socket.broadcast.emit("stoneUpdated", data); // 只广播给其他客户端
       saveState();
     }
   });
@@ -129,13 +162,28 @@ io.on("connection", (socket) => {
   socket.on("updateWater", (data) => {
     state.waterLevel = data.level;
     state.waterHeight = data.height;
-    io.emit("waterUpdated", data);
+    socket.broadcast.emit("waterUpdated", data); // 只广播给其他客户端
     saveState();
+  });
+
+  // 处理重置请求
+  socket.on("reset", () => {
+    // 可以选择是否真正重置状态，或者只是通知其他客户端
+    socket.broadcast.emit("reset");
   });
 
   // 客户端断开连接
   socket.on("disconnect", () => {
     console.log(`Client disconnected: ${socket.id}`);
+
+    // 从用户列表中移除
+    if (connectedUsers.has(socket.id)) {
+      connectedUsers.delete(socket.id);
+
+      // 广播用户离开事件
+      io.emit("userLeft", socket.id);
+    }
+
     // 不再清理石子，保留状态
     saveState();
   });
