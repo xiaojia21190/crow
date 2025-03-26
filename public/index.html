@@ -237,12 +237,12 @@
             svgStone.setAttribute("data-id", stone.id);
             svgStone.setAttribute("cx", stone.x);
             svgStone.setAttribute("cy", stone.y);
-            svgStone.setAttribute("r", 3);
+            svgStone.setAttribute("r", 5);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
             remoteStoneSVGElements.set(stone.id, svgStone);
             // 为远程石子创建物理体并添加到物理世界
-            const physicsStone = Bodies.circle(stone.x, stone.y, 3, {
+            const physicsStone = Bodies.circle(stone.x, stone.y, 5, {
               restitution: 0.3,
               friction: 0.5,
               density: 0.01,
@@ -250,18 +250,19 @@
             });
             physicsStone.id = stone.id;
             World.add(world, physicsStone);
-            // 将SVG元素与物理体关联
             svgStone.physicsBody = physicsStone;
           }
         });
         stoneCount = data.stones.length;
 
-        // 同步初始水位
+        // 同步初始水位并重置波纹
         if (data.waterLevel !== undefined && data.waterHeight !== undefined) {
           waterLevel = data.waterLevel;
           waterHeight = data.waterHeight;
           water.setAttribute("y", waterLevel);
           water.setAttribute("height", waterHeight);
+          // 重置波纹动画到初始状态
+          document.getElementById("waterWave").setAttribute("d", "M150,240 Q175,238 200,240 Q225,242 250,240");
         }
       });
 
@@ -272,6 +273,8 @@
           waterHeight = data.height;
           water.setAttribute("y", waterLevel);
           water.setAttribute("height", waterHeight);
+          // 重置波纹动画到初始状态
+          document.getElementById("waterWave").setAttribute("d", "M150,240 Q175,238 200,240 Q225,242 250,240");
         }
       });
 
@@ -305,7 +308,7 @@
 
             // 创建本地石子
             const stoneId = Date.now().toString();
-            const stone = Bodies.circle(180, 100, 3, {
+            const stone = Bodies.circle(180, 100, 5, {
               restitution: 0.3,
               friction: 0.5,
               density: 0.01,
@@ -317,11 +320,10 @@
             svgStone.setAttribute("data-id", stoneId);
             svgStone.setAttribute("cx", 180);
             svgStone.setAttribute("cy", 100);
-            svgStone.setAttribute("r", 3);
+            svgStone.setAttribute("r", 5);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
-            // 将SVG元素与物理体关联
-            svgStone.physicsBody = stone;
+
             stone.svgElement = svgStone;
             stoneCount++;
 

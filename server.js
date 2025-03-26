@@ -83,14 +83,15 @@ io.on("connection", (socket) => {
   console.log(`New client connected: ${socket.id}`);
 
   // 发送当前状态
-  socket.emit("init", {
-    stones: Array.from(state.stones.values()),
-    waterLevel: state.waterLevel,
-    waterHeight: state.waterHeight,
-  });
+  // socket.emit("init", {
+  //   stones: Array.from(state.stones.values()),
+  //   waterLevel: state.waterLevel,
+  //   waterHeight: state.waterHeight,
+  // });
 
   // 处理初始化请求
   socket.on("requestInit", () => {
+    loadState();
     socket.emit("init", {
       stones: Array.from(state.stones.values()),
       waterLevel: state.waterLevel,
@@ -108,7 +109,6 @@ io.on("connection", (socket) => {
     };
 
     state.stones.set(data.id, stone);
-    io.emit("stoneAdded", stone);
     saveState();
   });
 
@@ -136,13 +136,7 @@ io.on("connection", (socket) => {
   // 客户端断开连接
   socket.on("disconnect", () => {
     console.log(`Client disconnected: ${socket.id}`);
-    // 清理该客户端创建的石子
-    Array.from(state.stones.entries()).forEach(([id, stone]) => {
-      if (stone.clientId === socket.id) {
-        state.stones.delete(id);
-        io.emit("stoneRemoved", id);
-      }
-    });
+    // 不再清理石子，保留状态
     saveState();
   });
 });
