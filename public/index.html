@@ -233,8 +233,8 @@
           <animateTransform id="crowReturn" attributeName="transform" type="translate" values="100,40; 70,30; 40,20; 10,10; 0,0" keyTimes="0;0.3;0.6;0.9;1" dur="1.2s" begin="indefinite" fill="freeze" />
         </g>
       </svg>
-      <audio id="stoneSplash" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
-      <audio id="crowCaw" src="https://www.soundjay.com/nature/crow-01.mp3"></audio>
+      <audio id="stoneSplash" src="stoneSplash.mp3" preload="auto"></audio>
+      <audio id="crowCaw" src="crowCaw.mp3" preload="auto"></audio>
     </div>
     <script>
       // 初始化物理引擎
@@ -607,6 +607,12 @@
         // 乌鸦飞向水桶
         crowMove.beginElement();
 
+        // 播放乌鸦叫声
+        setTimeout(() => {
+          crowCaw.currentTime = 0; // 重置音频位置
+          crowCaw.play();
+        }, 300); // 稍微延迟播放，与动画同步
+
         crowMove.addEventListener(
           "endEvent",
           () => {
@@ -647,8 +653,22 @@
               y: stoneStartY,
             });
 
-            // 检查石子是否停止
+            // 检查石子是否停止或接触水面
             let checkStoneInterval = setInterval(() => {
+              // 检查石子是否接触到水面
+              if (!stone.hasHitWater && stone.position.y >= waterLevel) {
+                // 标记石子已接触水面
+                stone.hasHitWater = true;
+
+                // 播放石子落水声音
+                stoneSplash.currentTime = 0; // 重置音频位置
+                stoneSplash.play();
+
+                // 触发水波幅度扩大效果
+                document.getElementById("waveAmplify").beginElement();
+              }
+
+              // 检查石子是否停止移动
               if (stone.speed < 0.14) {
                 clearInterval(checkStoneInterval);
 
@@ -666,9 +686,6 @@
                 waterHeightAnim.beginElement();
                 water.setAttribute("y", waterLevel);
                 water.setAttribute("height", waterHeight);
-                stoneSplash.play();
-                // 触发水波幅度扩大效果
-                document.getElementById("waveAmplify").beginElement();
 
                 // 通知服务器更新水位
                 socket.emit("updateWater", {
@@ -686,7 +703,6 @@
                       birdStone.setAttribute("opacity", "1");
                       isAnimationInProgress = false;
                       dropBtn.disabled = false;
-                      // resetBtn.disabled = false;
                     },
                     { once: true }
                   );
