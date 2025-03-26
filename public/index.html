@@ -77,10 +77,21 @@
           <animate id="waterHeight" attributeName="height" dur="0.5s" fill="freeze" begin="indefinite" />
         </rect>
 
-        <!-- 水面波纹效果 -->
-        <path id="waterWave" d="M150,240 Q175,238 200,240 Q225,242 250,240" stroke="#7AC5E4" fill="none" opacity="0" stroke-width="1.5">
-          <animate attributeName="opacity" values="0;0.7;0" dur="1.5s" begin="waterRise.begin" />
-          <animate attributeName="d" values="M150,240 Q175,238 200,240 Q225,242 250,250;M150,240 Q175,242 200,240 Q225,238 250,240;M150,240 Q175,238 200,240 Q225,242 250,240" dur="1.5s" begin="waterRise.begin" />
+        <!-- 水面波纹效果 - 持续波动 -->
+        <path id="waterWave" d="M150,240 Q175,238 200,240 Q225,242 250,240" stroke="#7AC5E4" fill="none" opacity="0.7" stroke-width="1.5">
+          <animate
+            id="waveAnim"
+            attributeName="d"
+            values="
+            M150,240 Q175,238 200,240 Q225,242 250,240;
+            M150,240 Q175,235 200,240 Q225,245 250,240;
+            M150,240 Q175,238 200,240 Q225,242 250,240;
+            M150,240 Q175,242 200,240 Q225,238 250,240;
+            M150,240 Q175,238 200,240 Q225,242 250,240"
+            dur="3s"
+            repeatCount="indefinite"
+          />
+          <animate id="waveAmplify" attributeName="stroke-width" values="1.5;3;1.5" dur="0.5s" begin="indefinite" fill="freeze" />
         </path>
 
         <!-- 石子组 -->
@@ -95,7 +106,7 @@
           <polygon points="83,45 90,50 83,55" fill="#F5C518">
             <animateTransform attributeName="transform" type="rotate" values="0 83 50; 5 83 50; -5 83 50; 0 83 50" dur="1.5s" repeatCount="indefinite" />
           </polygon>
-          <circle id="birdStone" cx="88" cy="50" r="5" fill="gray" />
+          <circle id="birdStone" cx="88" cy="50" r="3" fill="gray" />
           <path d="M45,50 Q30,60 35,70 Q45,75 55,50" fill="#1C2526">
             <animateTransform attributeName="transform" type="rotate" values="0 50 50; -20 50 50; 0 50 50; 10 50 50; 0 50 50" dur="0.6s" repeatCount="indefinite" keyTimes="0;0.3;0.5;0.8;1" />
           </path>
@@ -147,6 +158,7 @@
       });
       const world = engine.world; // 明确定义world变量
       engine.world.gravity.y = 0.5;
+      engine.world.scale = 0.8;
 
       // 初始化物理世界
       const ground = Bodies.rectangle(200, 252, 100, 5, { isStatic: true });
@@ -182,7 +194,7 @@
           svgStone.setAttribute("data-id", data.id);
           svgStone.setAttribute("cx", data.x);
           svgStone.setAttribute("cy", data.y);
-          svgStone.setAttribute("r", 5);
+          svgStone.setAttribute("r", 3);
           svgStone.setAttribute("fill", "gray");
           stonesGroup.appendChild(svgStone);
           remoteStoneSVGElements.set(data.id, svgStone);
@@ -222,10 +234,21 @@
             svgStone.setAttribute("data-id", stone.id);
             svgStone.setAttribute("cx", stone.x);
             svgStone.setAttribute("cy", stone.y);
-            svgStone.setAttribute("r", 5);
+            svgStone.setAttribute("r", 3);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
             remoteStoneSVGElements.set(stone.id, svgStone);
+            // 为远程石子创建物理体并添加到物理世界
+            const physicsStone = Bodies.circle(stone.x, stone.y, 3, {
+              restitution: 0.3,
+              friction: 0.5,
+              density: 0.01,
+              isStatic: false,
+            });
+            physicsStone.id = stone.id;
+            World.add(world, physicsStone);
+            // 将SVG元素与物理体关联
+            svgStone.physicsBody = physicsStone;
           }
         });
         stoneCount = data.stones.length;
@@ -279,7 +302,7 @@
 
             // 创建本地石子
             const stoneId = Date.now().toString();
-            const stone = Bodies.circle(180, 100, 5, {
+            const stone = Bodies.circle(180, 100, 3, {
               restitution: 0.3,
               friction: 0.5,
               density: 0.01,
@@ -291,7 +314,7 @@
             svgStone.setAttribute("data-id", stoneId);
             svgStone.setAttribute("cx", 180);
             svgStone.setAttribute("cy", 100);
-            svgStone.setAttribute("r", 5);
+            svgStone.setAttribute("r", 3);
             svgStone.setAttribute("fill", "gray");
             stonesGroup.appendChild(svgStone);
             stone.svgElement = svgStone;
@@ -324,6 +347,8 @@
                 water.setAttribute("y", waterLevel);
                 water.setAttribute("height", waterHeight);
                 stoneSplash.play();
+                // 触发水波幅度扩大效果
+                document.getElementById("waveAmplify").beginElement();
 
                 // 通知服务器更新水位
                 socket.emit("updateWater", {
